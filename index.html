@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Operation Scheduler</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+            outline: none;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+        .btn-primary:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.5);
+        }
+        .btn-secondary {
+            background-color: #d1d5db;
+            color:#1f2937;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+            outline: none;
+        }
+        .btn-secondary:hover {
+            background-color: #9ca3af;
+        }
+        .btn-secondary:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(107,114,128,0.5);
+        }
+        .btn-danger {
+            background-color: #dc2626 ;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+            outline: none;
+        }
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
+        .btn-danger:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(239,68,68,0.5);
+        }
+        .btn-success {
+            background-color: #16a34a;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+            outline: none;
+        }
+        .btn-success:hover {
+            background-color: #15803d;
+        }
+        .btn-success:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(34,197,94,0.5);
+        }
+        input, select, textarea{
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            outline: none;
+        }
+        input:focus, select:focus, textarea:focus{
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.5);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background-color: #f9fafb;
+            font-weight: 600;
+            color: #4b5563;
+            text-transform: uppercase;
+        }
+        tr:hover {
+            background-color: #f3f4f6;
+        }
+        /* Modal styles */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            transform: translateY(-50px);
+            transition: transform 0.3s ease;
+        }
+        .modal.open .modal-content {
+            transform: translateY(0);
+        }
+        .modal-header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        .modal-body {
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingOverlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+            <p class="mt-4 text-white text-lg">Loading...</p>
+        </div>
+    </div>
+
+    <header class="bg-blue-700 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-2xl font-bold">Hospital Operation Scheduler</h1>
+        <div class="flex items-center space-x-4">
+            <span id="userIdDisplay" class="text-sm">User ID: N/A</span>
+            <button id="logoutBtn" class="btn-secondary hidden">Logout</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Message Modal -->
+        <div id="messageModal" class="modal">
+            <div class="modal-content">
+                <div id="modalHeader" class="modal-header"></div>
+                <div id="modalBody" class="modal-body"></div>
+                <button id="modalCloseBtn" class="btn-primary">Close</button>
+            </div>
+        </div>
+
+        <!-- Login/Register Section -->
+        <section id="authSection" class="card">
+            <h2 class="text-2xl font-semibold mb-4">Login / Register</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-xl font-medium mb-3">Login</h3>
+                    <form id="loginForm" class="space-y-4">
+                        <div>
+                            <label for="loginEmail" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" id="loginEmail" placeholder="Enter your email" class="input-field" required>
+                        </div>
+                        <div>
+                            <label for="loginPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input type="password" id="loginPassword" placeholder="Enter your password" class="input-field" required>
+                        </div>
+                        <button type="submit" class="btn-primary w-full">Login</button>
+                    </form>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium mb-3">Register</h3>
+                    <form id="registerForm" class="space-y-4">
+                        <div>
+                            <label for="registerEmail" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" id="registerEmail" placeholder="Enter your email" class="input-field" required>
+                        </div>
+                        <div>
+                            <label for="registerPassword" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input type="password" id="registerPassword" placeholder="Enter your password" class="input-field" required>
+                        </div>
+                        <div>
+                            <label for="registerRole" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                            <select id="registerRole" class="input-field">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary w-full">Register</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Admin Dashboard -->
+        <section id="adminDashboard" class="card hidden">
+            <h2 class="text-2xl font-semibold mb-6">Admin Dashboard</h2>
+            <nav class="mb-6">
+                <ul class="flex space-x-4">
+                    <li><button id="showDoctorsBtn" class="btn-secondary">Manage Doctors</button></li>
+                    <li><button id="showPatientsBtn" class="btn-secondary">Manage Patients</button></li>
+                    <li><button id="showOperationsBtn" class="btn-secondary">Manage Operations</button></li>
+                    <li><button id="showAdminAnalysisBtn" class="btn-secondary">Analysis & Reports</button></li>
+                </ul>
+            </nav>
+
+            <!-- Manage Doctors -->
+            <div id="manageDoctorsSection" class="dashboard-section hidden">
+                <h3 class="text-xl font-medium mb-4">Manage Doctors</h3>
+                <form id="doctorForm" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <input type="hidden" id="doctorId">
+                    <div><input type="text" id="doctorName" placeholder="Doctor Name" required></div>
+                    <div><input type="text" id="doctorSpecialization" placeholder="Specialization" required></div>
+                    <div><input type="text" id="doctorContact" placeholder="Contact Info" required></div>
+                    <div class="md:col-span-2 flex space-x-2">
+                        <button type="submit" class="btn-success">Add/Update Doctor</button>
+                        <button type="button" id="clearDoctorFormBtn" class="btn-secondary">Clear Form</button>
+                    </div>
+                </form>
+                <div class="overflow-x-auto">
+                    <table id="doctorsTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Specialization</th>
+                                <th>Contact</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="doctorsList">
+                            <!-- Doctors will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Manage Patients -->
+            <div id="managePatientsSection" class="dashboard-section hidden">
+                <h3 class="text-xl font-medium mb-4">Manage Patients</h3>
+                <form id="patientForm" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <input type="hidden" id="patientId">
+                    <div><input type="text" id="patientName" placeholder="Patient Name" required></div>
+                    <div><input type="text" id="patientContact" placeholder="Contact Info" required></div>
+                    <div><textarea id="patientMedicalHistory" placeholder="Medical History (Optional)" rows="3"></textarea></div>
+                    <div class="md:col-span-2 flex space-x-2">
+                        <button type="submit" class="btn-success">Add/Update Patient</button>
+                        <button type="button" id="clearPatientFormBtn" class="btn-secondary">Clear Form</button>
+                    </div>
+                </form>
+                <div class="overflow-x-auto">
+                    <table id="patientsTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Contact</th>
+                                <th>Medical History</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patientsList">
+                            <!-- Patients will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Manage Operations -->
+            <div id="manageOperationsSection" class="dashboard-section hidden">
+                <h3 class="text-xl font-medium mb-4">Manage Operations</h3>
+                <form id="operationForm" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <input type="hidden" id="operationId">
+                    <div>
+                        <label for="operationDate" class="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+                        <input type="datetime-local" id="operationDate" required>
+                    </div>
+                    <div>
+                        <label for="otId" class="block text-sm font-medium text-gray-700 mb-1">Operation Theater (OT) ID</label>
+                        <input type="text" id="otId" placeholder="e.g., OT1, OT2" required>
+                    </div>
+                    <div>
+                        <label for="patientSelect" class="block text-sm font-medium text-gray-700 mb-1">Patient</label>
+                        <select id="patientSelect" required class="w-full">
+                            <option value="">Select Patient</option>
+                            <!-- Patients will be loaded here -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="anesthesiaType" class="block text-sm font-medium text-gray-700 mb-1">Anesthesia Type</label>
+                        <input type="text" id="anesthesiaType" placeholder="e.g., General, Local" required>
+                    </div>
+                    <div>
+                        <label for="anesthesiologistSelect" class="block text-sm font-medium text-gray-700 mb-1">Anesthesiologist</label>
+                        <select id="anesthesiologistSelect" required class="w-full">
+                            <option value="">Select Anesthesiologist</option>
+                            <!-- Doctors will be loaded here -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="surgeonSelect" class="block text-sm font-medium text-gray-700 mb-1">Surgeon</label>
+                        <select id="surgeonSelect" required class="w-full">
+                            <option value="">Select Surgeon</option>
+                            <!-- Doctors will be loaded here -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="assistantSurgeonSelect" class="block text-sm font-medium text-gray-700 mb-1">Assistant Surgeon (Optional)</label>
+                        <select id="assistantSurgeonSelect" class="w-full">
+                            <option value="">None</option>
+                            <!-- Doctors will be loaded here -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="nursesInput" class="block text-sm font-medium text-gray-700 mb-1">Nurses Involved (comma-separated)</label>
+                        <input type="text" id="nursesInput" placeholder="Nurse A, Nurse B">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="prePostEvents" class="block text-sm font-medium text-gray-700 mb-1">Pre/Post-Operative Events</label>
+                        <textarea id="prePostEvents" placeholder="Record pre- and post-operative events" rows="3"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="surgicalReports" class="block text-sm font-medium text-gray-700 mb-1">Surgical Reports (e.g., Patient chart, operative transcription)</label>
+                        <textarea id="surgicalReports" placeholder="Attach surgical reports details" rows="3"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="doctorRemarks" class="block text-sm font-medium text-gray-700 mb-1">Doctor Remarks</label>
+                        <textarea id="doctorRemarks" placeholder="Remarks from operating room doctors" rows="3"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="materialsRequired" class="block text-sm font-medium text-gray-700 mb-1">Drugs, Instruments, Materials Required (comma-separated)</label>
+                        <textarea id="materialsRequired" placeholder="List unique materials required" rows="3"></textarea>
+                    </div>
+                    <div class="md:col-span-2 flex space-x-2">
+                        <button type="submit" class="btn-success">Add/Update Operation</button>
+                        <button type="button" id="clearOperationFormBtn" class="btn-secondary">Clear Form</button>
+                    </div>
+                </form>
+                <div class="flex items-center space-x-4 mb-4">
+                    <label for="operationDateFilter" class="block text-sm font-medium text-gray-700">Filter by Date:</label>
+                    <input type="date" id="operationDateFilter" class="p-2 border rounded-lg">
+                    <button id="clearOperationDateFilterBtn" class="btn-secondary">Clear Filter</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="operationsTable">
+                        <thead>
+                            <tr>
+                                <th>Date/Time</th>
+                                <th>OT ID</th>
+                                <th>Patient</th>
+                                <th>Surgeon</th>
+                                <th>Anesthesiologist</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="operationsList">
+                            <!-- Operations will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admin Analysis & Reports -->
+            <div id="adminAnalysisSection" class="dashboard-section hidden">
+                <h3 class="text-xl font-medium mb-4">Analysis & Reports</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-blue-50 p-6 rounded-lg shadow-sm">
+                        <h4 class="text-lg font-semibold mb-2">Total Operations</h4>
+                        <p id="totalOperationsCount" class="text-4xl font-bold text-blue-700">0</p>
+                    </div>
+                    <div class="bg-green-50 p-6 rounded-lg shadow-sm">
+                        <h4 class="text-lg font-semibold mb-2">Doctors Registered</h4>
+                        <p id="totalDoctorsCount" class="text-4xl font-bold text-green-700">0</p>
+                    </div>
+                    <div class="bg-yellow-50 p-6 rounded-lg shadow-sm">
+                        <h4 class="text-lg font-semibold mb-2">Patients Registered</h4>
+                        <p id="totalPatientsCount" class="text-4xl font-bold text-yellow-700">0</p>
+                    </div>
+                </div>
+
+                <h4 class="text-lg font-semibold mt-8 mb-4">OT Activity & Efficiency</h4>
+                <div class="overflow-x-auto">
+                    <table id="otEfficiencyTable">
+                        <thead>
+                            <tr>
+                                <th>OT ID</th>
+                                <th>Total Operations</th>
+                                <th>Peak Usage Day</th>
+                            </tr>
+                        </thead>
+                        <tbody id="otEfficiencyList">
+                            <!-- OT Efficiency data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4 class="text-lg font-semibold mt-8 mb-4">Material Usage Insights</h4>
+                <div id="materialUsageInsights" class="bg-purple-50 p-6 rounded-lg shadow-sm">
+                    <p>Insights on frequently used drugs, instruments, and materials will appear here based on operation data.</p>
+                    <ul id="materialList" class="list-disc pl-5 mt-4">
+                        <!-- Materials will be loaded here -->
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- User Dashboard -->
+        <section id="userDashboard" class="card hidden">
+            <h2 class="text-2xl font-semibold mb-6">User Dashboard</h2>
+            <nav class="mb-6">
+                <ul class="flex space-x-4">
+                    <li><button id="showUserDoctorsBtn" class="btn-secondary">View Doctors</button></li>
+                    <li><button id="showUserSurgicalInfoBtn" class="btn-secondary">View Surgical Information</button></li>
+                </ul>
+            </nav>
+
+            <!-- View Doctors for User -->
+            <div id="userDoctorsSection" class="dashboard-section hidden">
+                <h3 class="text-xl font-medium mb-4">Available Doctors</h3>
+                <div class="overflow-x-auto">
+                    <table id="userDoctorsTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Specialization</th>
+                                <th>Contact</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userDoctorsList">
+                            <!-- Doctors will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- View Surgical Information for User -->
+            <div id="userSurgicalInfoSection" class="dashboard-section hidden">
+                <h3 class="text-xl font-medium mb-4">My Surgical Information</h3>
+                 <div class="flex items-center space-x-4 mb-4">
+                    <label for="userOperationDateFilter" class="block text-sm font-medium text-gray-700">Filter by Date:</label>
+                    <input type="date" id="userOperationDateFilter" class="p-2 border rounded-lg">
+                    <button id="clearUserOperationDateFilterBtn" class="btn-secondary">Clear Filter</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table id="userOperationsTable">
+                        <thead>
+                            <tr>
+                                <th>Date/Time</th>
+                                <th>OT ID</th>
+                                <th>Patient</th>
+                                <th>Surgeon</th>
+                                <th>Anesthesiologist</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userOperationsList">
+                            <!-- Operations will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase instances
+        let app;
+        let db;
+        let auth;
+        let currentUserId = null;
+        let currentUserRole = null;
+        let isAuthReady = false;
+
+        // Get elements
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const authSection = document.getElementById('authSection');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const adminDashboard = document.getElementById('adminDashboard');
+        const userDashboard = document.getElementById('userDashboard');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+
+        const manageDoctorsSection = document.getElementById('manageDoctorsSection');
+        const managePatientsSection = document.getElementById('managePatientsSection');
+        const manageOperationsSection = document.getElementById('manageOperationsSection');
+        const adminAnalysisSection = document.getElementById('adminAnalysisSection');
+
+        const doctorForm = document.getElementById('doctorForm');
+        const doctorIdInput = document.getElementById('doctorId');
+        const doctorNameInput = document.getElementById('doctorName');
+        const doctorSpecializationInput = document.getElementById('doctorSpecialization');
+        const doctorContactInput = document.getElementById('doctorContact');
+        const doctorsList = document.getElementById('doctorsList');
+        const clearDoctorFormBtn = document.getElementById('clearDoctorFormBtn');
+
+        const patientForm = document.getElementById('patientForm');
+        const patientIdInput = document.getElementById('patientId');
+        const patientNameInput = document.getElementById('patientName');
+        const patientContactInput = document.getElementById('patientContact');
+        const patientMedicalHistoryInput = document.getElementById('patientMedicalHistory');
+        const patientsList = document.getElementById('patientsList');
+        const clearPatientFormBtn = document.getElementById('clearPatientFormBtn');
+
+        const operationForm = document.getElementById('operationForm');
+        const operationIdInput = document.getElementById('operationId');
+        const operationDateInput = document.getElementById('operationDate');
+        const otIdInput = document.getElementById('otId');
+        const patientSelect = document.getElementById('patientSelect');
+        const anesthesiaTypeInput = document.getElementById('anesthesiaType');
+        const anesthesiologistSelect = document.getElementById('anesthesiologistSelect');
+        const surgeonSelect = document.getElementById('surgeonSelect');
+        const assistantSurgeonSelect = document.getElementById('assistantSurgeonSelect');
+        const nursesInput = document.getElementById('nursesInput');
+        const prePostEventsInput = document.getElementById('prePostEvents');
+        const surgicalReportsInput = document.getElementById('surgicalReports');
+        const doctorRemarksInput = document.getElementById('doctorRemarks');
+        const materialsRequiredInput = document.getElementById('materialsRequired');
+        const operationsList = document.getElementById('operationsList');
+        const clearOperationFormBtn = document.getElementById('clearOperationFormBtn');
+        const operationDateFilter = document.getElementById('operationDateFilter');
+        const clearOperationDateFilterBtn = document.getElementById('clearOperationDateFilterBtn');
+
+        const totalOperationsCount = document.getElementById('totalOperationsCount');
+        const totalDoctorsCount = document.getElementById('totalDoctorsCount');
+        const totalPatientsCount = document.getElementById('totalPatientsCount');
+        const otEfficiencyList = document.getElementById('otEfficiencyList');
+        const materialList = document.getElementById('materialList');
+
+        const userDoctorsSection = document.getElementById('userDoctorsSection');
+        const userSurgicalInfoSection = document.getElementById('userSurgicalInfoSection');
+        const userDoctorsList = document.getElementById('userDoctorsList');
+        const userOperationsList = document.getElementById('userOperationsList');
+        const userOperationDateFilter = document.getElementById('userOperationDateFilter');
+        const clearUserOperationDateFilterBtn = document.getElementById('clearUserOperationDateFilterBtn');
+
+        // Modal elements
+        const messageModal = document.getElementById('messageModal');
+        const modalHeader = document.getElementById('modalHeader');
+        const modalBody = document.getElementById('modalBody');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+        // Show message modal
+        function showMessage(header, body) {
+            modalHeader.textContent = header;
+            modalBody.innerHTML = body; // Use innerHTML to allow HTML content in the modal
+            messageModal.classList.add('open');
+        }
+
+        // Close message modal
+        modalCloseBtn.addEventListener('click', () => {
+            messageModal.classList.remove('open');
+        });
+
+        // Initialize Firebase
+        function initializeFirebase() {
+            try {
+                    const firebaseConfig = {
+                    apiKey: "AIzaSyA0SvtI7JrIwjEME3E_NcRrroO_DnvyoyA",
+                    authDomain: "operation-management-e0d5f.firebaseapp.com",
+                    databaseURL: "https://operation-management-e0d5f-default-rtdb.asia-southeast1.firebasedatabase.app",
+                    projectId: "operation-management-e0d5f",
+                    storageBucket: "operation-management-e0d5f.firebasestorage.app",
+                    messagingSenderId: "145971868402",
+                    appId: "1:145971868402:web:f2ae70ef209b5b76d3d66b"
+                    };
+                    
+                    const __app_id = "hospital-operation-manag-2ca6b";
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Listen for authentication state changes
+                onAuthStateChanged(auth, async (user) => {
+                    loadingOverlay.classList.remove('hidden');
+                    if (user) {
+                        currentUserId = user.uid;
+                        userIdDisplay.textContent = `User: ${user.email || 'Anonymous'}`;
+                        logoutBtn.classList.remove('hidden');
+                        
+                        // Fetch user role from Firestore
+                        const userDocRef = doc(db, "users", user.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+
+                        if (userDocSnap.exists()) {
+                            currentUserRole = userDocSnap.data().role;
+                        } else {
+                            currentUserRole = 'user'; // Default role
+                        }
+                        
+                        console.log(`User signed in: ${user.uid}, Role: ${currentUserRole}`);
+
+                        if (currentUserRole === 'admin') {
+                            authSection.classList.add('hidden');
+                            userDashboard.classList.add('hidden');
+                            adminDashboard.classList.remove('hidden');
+                            showAdminSection('manageDoctorsSection');
+                            setupAdminDashboardListeners();
+                        } else {
+                            authSection.classList.add('hidden');
+                            adminDashboard.classList.add('hidden');
+                            userDashboard.classList.remove('hidden');
+                            showUserSection('userDoctorsSection');
+                            setupUserDashboardListeners();
+                        }
+                    } else {
+                        currentUserId = null;
+                        currentUserRole = null;
+                        userIdDisplay.textContent = `User ID: N/A`;
+                        logoutBtn.classList.add('hidden');
+                        authSection.classList.remove('hidden');
+                        adminDashboard.classList.add('hidden');
+                        userDashboard.classList.add('hidden');
+                        console.log("User signed out.");
+                    }
+                    isAuthReady = true;
+                    loadingOverlay.classList.add('hidden');
+                    attachFirestoreListeners();
+                });
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                showMessage("Firebase Error", "Failed to initialize Firebase. Check console and ensure your config is correct.");
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        // Function to show loading overlay
+        function showLoading() {
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        // Function to hide loading overlay
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        // Attach Firestore listeners
+        function attachFirestoreListeners() {
+            if (!isAuthReady) return;
+            
+            // Detach previous listeners to avoid duplicates
+            if (doctorsUnsubscribe) doctorsUnsubscribe();
+            if (patientsUnsubscribe) patientsUnsubscribe();
+            if (operationsUnsubscribe) operationsUnsubscribe();
+            if (userOperationsUnsubscribe) userOperationsUnsubscribe();
+
+            if (currentUserRole === 'admin') {
+                listenToDoctors();
+                listenToPatients();
+                listenToOperations();
+            } else if (currentUserRole === 'user') {
+                listenToDoctorsForUser();
+                listenToOperationsForUser();
+            }
+        }
+
+        // UI Navigation functions
+        function showAdminSection(sectionId) {
+            document.querySelectorAll('#adminDashboard .dashboard-section').forEach(section => section.classList.add('hidden'));
+            document.getElementById(sectionId).classList.remove('hidden');
+            if (sectionId === 'manageOperationsSection') populatePatientAndDoctorSelects();
+        }
+
+        function showUserSection(sectionId) {
+            document.querySelectorAll('#userDashboard .dashboard-section').forEach(section => section.classList.add('hidden'));
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
+        // Event Listeners for Dashboard Navigation
+        function setupAdminDashboardListeners() {
+            document.getElementById('showDoctorsBtn').addEventListener('click', () => showAdminSection('manageDoctorsSection'));
+            document.getElementById('showPatientsBtn').addEventListener('click', () => showAdminSection('managePatientsSection'));
+            document.getElementById('showOperationsBtn').addEventListener('click', () => showAdminSection('manageOperationsSection'));
+            document.getElementById('showAdminAnalysisBtn').addEventListener('click', () => showAdminSection('adminAnalysisSection'));
+        }
+
+        function setupUserDashboardListeners() {
+            document.getElementById('showUserDoctorsBtn').addEventListener('click', () => showUserSection('userDoctorsSection'));
+            document.getElementById('showUserSurgicalInfoBtn').addEventListener('click', () => showUserSection('userSurgicalInfoSection'));
+        }
+
+        // --- Authentication ---
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+            try {
+                await signInWithEmailAndPassword(auth, loginEmail.value, loginPassword.value);
+                showMessage("Success", "Logged in successfully!");
+            } catch (error) {
+                showMessage("Login Failed", error.message);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, registerEmail.value, registerPassword.value);
+                const user = userCredential.user;
+                // Store user role in a top-level 'users' collection
+                await setDoc(doc(db, "users", user.uid), {
+                    email: user.email,
+                    role: registerRole.value
+                });
+                showMessage("Success", "Registered successfully! You can now log in.");
+                registerForm.reset();
+            } catch (error) {
+                showMessage("Registration Failed", error.message);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            await signOut(auth);
+            showMessage("Success", "Logged out successfully!");
+        });
+
+        // --- CRUD Operations for Doctors ---
+        let doctorsUnsubscribe;
+        function listenToDoctors() {
+            if (doctorsUnsubscribe) doctorsUnsubscribe();
+            const doctorsColRef = collection(db, "doctors");
+            doctorsUnsubscribe = onSnapshot(doctorsColRef, (snapshot) => {
+                const doctors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                displayDoctors(doctors);
+                updateTotalDoctorsCount(doctors.length);
+            }, (error) => console.error("Error listening to doctors:", error));
+        }
+
+        doctorForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = doctorIdInput.value;
+            const data = {
+                name: doctorNameInput.value,
+                specialization: doctorSpecializationInput.value,
+                contact: doctorContactInput.value,
+                timestamp: new Date()
+            };
+            try {
+                if (id) {
+                    await updateDoc(doc(db, "doctors", id), data);
+                    showMessage("Success", "Doctor updated successfully.");
+                } else {
+                    await addDoc(collection(db, "doctors"), data);
+                    showMessage("Success", "Doctor added successfully.");
+                }
+                doctorForm.reset();
+                doctorIdInput.value = '';
+            } catch (error) {
+                showMessage("Error", "Failed to save doctor: " + error.message);
+            }
+        });
+
+        clearDoctorFormBtn.addEventListener('click', () => {
+            doctorForm.reset();
+            doctorIdInput.value = '';
+        });
+
+        function displayDoctors(doctors) {
+            doctorsList.innerHTML = '';
+            doctors.sort((a,b) => b.timestamp.toDate() - a.timestamp.toDate()).forEach(d => {
+                const row = doctorsList.insertRow();
+                row.innerHTML = `<td>${d.name}</td><td>${d.specialization}</td><td>${d.contact}</td>
+                    <td><button class="btn-success edit-doctor-btn" data-id="${d.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn-danger delete-doctor-btn" data-id="${d.id}"><i class="fas fa-trash-alt"></i></button></td>`;
+            });
+            document.querySelectorAll('.edit-doctor-btn').forEach(b => b.onclick = (e) => {
+                const id = e.currentTarget.dataset.id;
+                const d = doctors.find(doc => doc.id === id);
+                if(d) {
+                    doctorIdInput.value = d.id;
+                    doctorNameInput.value = d.name;
+                    doctorSpecializationInput.value = d.specialization;
+                    doctorContactInput.value = d.contact;
+                }
+            });
+            document.querySelectorAll('.delete-doctor-btn').forEach(b => b.onclick = async (e) => {
+                const id = e.currentTarget.dataset.id;
+                if (confirm("Delete this doctor?")) await deleteDoc(doc(db, "doctors", id));
+            });
+        }
+
+        // --- CRUD Operations for Patients ---
+        let patientsUnsubscribe;
+        function listenToPatients() {
+            if (patientsUnsubscribe) patientsUnsubscribe();
+            const patientsColRef = collection(db, "patients");
+            patientsUnsubscribe = onSnapshot(patientsColRef, (snapshot) => {
+                const patients = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                displayPatients(patients);
+                updateTotalPatientsCount(patients.length);
+            }, (error) => console.error("Error listening to patients:", error));
+        }
+        
+        patientForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = patientIdInput.value;
+            const data = {
+                name: patientNameInput.value,
+                contact: patientContactInput.value,
+                medicalHistory: patientMedicalHistoryInput.value,
+                timestamp: new Date()
+            };
+            try {
+                if (id) {
+                    await updateDoc(doc(db, "patients", id), data);
+                     showMessage("Success", "Patient updated successfully.");
+                } else {
+                    await addDoc(collection(db, "patients"), data);
+                    showMessage("Success", "Patient added successfully.");
+                }
+                patientForm.reset();
+                patientIdInput.value = '';
+            } catch (error) {
+                showMessage("Error", "Failed to save patient: " + error.message);
+            }
+        });
+
+        clearPatientFormBtn.addEventListener('click', () => {
+            patientForm.reset();
+            patientIdInput.value = '';
+        });
+
+        function displayPatients(patients) {
+            patientsList.innerHTML = '';
+            patients.sort((a,b) => b.timestamp.toDate() - a.timestamp.toDate()).forEach(p => {
+                const row = patientsList.insertRow();
+                row.innerHTML = `<td>${p.name}</td><td>${p.contact}</td><td>${p.medicalHistory || 'N/A'}</td>
+                    <td><button class="btn-success edit-patient-btn" data-id="${p.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn-danger delete-patient-btn" data-id="${p.id}"><i class="fas fa-trash-alt"></i></button></td>`;
+            });
+            document.querySelectorAll('.edit-patient-btn').forEach(b => b.onclick = (e) => {
+                const id = e.currentTarget.dataset.id;
+                const p = patients.find(doc => doc.id === id);
+                if(p) {
+                    patientIdInput.value = p.id;
+                    patientNameInput.value = p.name;
+                    patientContactInput.value = p.contact;
+                    patientMedicalHistoryInput.value = p.medicalHistory;
+                }
+            });
+            document.querySelectorAll('.delete-patient-btn').forEach(b => b.onclick = async (e) => {
+                const id = e.currentTarget.dataset.id;
+                if (confirm("Delete this patient?")) await deleteDoc(doc(db, "patients", id));
+            });
+        }
+
+        // --- CRUD Operations for Operations ---
+        let operationsUnsubscribe;
+        let allOperationsData = [];
+        function listenToOperations() {
+            if (operationsUnsubscribe) operationsUnsubscribe();
+            const operationsColRef = collection(db, "operations");
+            operationsUnsubscribe = onSnapshot(operationsColRef, (snapshot) => {
+                allOperationsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                applyOperationFilter();
+                updateTotalOperationsCount(allOperationsData.length);
+                generateOTEfficiencyReport(allOperationsData);
+                generateMaterialUsageReport(allOperationsData);
+            }, (error) => console.error("Error listening to operations:", error));
+        }
+
+        function applyOperationFilter() {
+            const filterDate = operationDateFilter.value;
+            const filtered = filterDate ? allOperationsData.filter(op => op.dateTime && op.dateTime.startsWith(filterDate)) : allOperationsData;
+            displayOperations(filtered);
+        }
+
+        operationDateFilter.addEventListener('change', applyOperationFilter);
+        clearOperationDateFilterBtn.addEventListener('click', () => {
+            operationDateFilter.value = '';
+            applyOperationFilter();
+        });
+
+        operationForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = operationIdInput.value;
+            const data = {
+                dateTime: operationDateInput.value,
+                otId: otIdInput.value,
+                patientId: patientSelect.value,
+                patientName: patientSelect.options[patientSelect.selectedIndex].text,
+                anesthesiaType: anesthesiaTypeInput.value,
+                anesthesiologistId: anesthesiologistSelect.value,
+                anesthesiologistName: anesthesiologistSelect.options[anesthesiologistSelect.selectedIndex].text,
+                surgeonId: surgeonSelect.value,
+                surgeonName: surgeonSelect.options[surgeonSelect.selectedIndex].text,
+                assistantSurgeonId: assistantSurgeonSelect.value || null,
+                assistantSurgeonName: assistantSurgeonSelect.value ? assistantSurgeonSelect.options[assistantSurgeonSelect.selectedIndex].text : null,
+                nurses: nursesInput.value.split(',').map(n => n.trim()).filter(Boolean),
+                prePostEvents: prePostEventsInput.value,
+                surgicalReports: surgicalReportsInput.value,
+                doctorRemarks: doctorRemarksInput.value,
+                materialsRequired: materialsRequiredInput.value.split(',').map(m => m.trim()).filter(Boolean),
+                timestamp: new Date()
+            };
+            try {
+                if (id) {
+                    await updateDoc(doc(db, "operations", id), data);
+                     showMessage("Success", "Operation updated successfully.");
+                } else {
+                    await addDoc(collection(db, "operations"), data);
+                    showMessage("Success", "Operation added successfully.");
+                }
+                operationForm.reset();
+                operationIdInput.value = '';
+            } catch (error) {
+                showMessage("Error", "Failed to save operation: " + error.message);
+            }
+        });
+
+        clearOperationFormBtn.addEventListener('click', () => {
+            operationForm.reset();
+            operationIdInput.value = '';
+        });
+
+        function displayOperations(operations) {
+            operationsList.innerHTML = '';
+            operations.sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)).forEach(op => {
+                const row = operationsList.insertRow();
+                row.innerHTML = `<td>${new Date(op.dateTime).toLocaleString()}</td><td>${op.otId}</td><td>${op.patientName}</td><td>${op.surgeonName}</td><td>${op.anesthesiologistName}</td>
+                    <td><button class="btn-success edit-operation-btn" data-id="${op.id}"><i class="fas fa-edit"></i></button>
+                        <button class="btn-danger delete-operation-btn" data-id="${op.id}"><i class="fas fa-trash-alt"></i></button></td>`;
+            });
+            document.querySelectorAll('.edit-operation-btn').forEach(b => b.onclick = (e) => {
+                const id = e.currentTarget.dataset.id;
+                const op = allOperationsData.find(o => o.id === id);
+                if (op) {
+                    operationIdInput.value = op.id;
+                    operationDateInput.value = op.dateTime;
+                    otIdInput.value = op.otId;
+                    patientSelect.value = op.patientId;
+                    anesthesiaTypeInput.value = op.anesthesiaType;
+                    anesthesiologistSelect.value = op.anesthesiologistId;
+                    surgeonSelect.value = op.surgeonId;
+                    assistantSurgeonSelect.value = op.assistantSurgeonId || '';
+                    nursesInput.value = op.nurses ? op.nurses.join(', ') : '';
+                    prePostEventsInput.value = op.prePostEvents;
+                    surgicalReportsInput.value = op.surgicalReports;
+                    doctorRemarksInput.value = op.doctorRemarks;
+                    materialsRequiredInput.value = op.materialsRequired ? op.materialsRequired.join(', ') : '';
+                }
+            });
+            document.querySelectorAll('.delete-operation-btn').forEach(b => b.onclick = async (e) => {
+                const id = e.currentTarget.dataset.id;
+                if (confirm("Delete this operation?")) await deleteDoc(doc(db, "operations", id));
+            });
+        }
+
+        async function populatePatientAndDoctorSelects() {
+            const [doctorsSnap, patientsSnap] = await Promise.all([
+                getDocs(collection(db, "doctors")),
+                getDocs(collection(db, "patients"))
+            ]);
+            const doctors = doctorsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const patients = patientsSnap.docs.map(p => ({ id: p.id, ...p.data() }));
+
+            patientSelect.innerHTML = '<option value="">Select Patient</option>';
+            patients.forEach(p => patientSelect.add(new Option(p.name, p.id)));
+
+            [anesthesiologistSelect, surgeonSelect, assistantSurgeonSelect].forEach(sel => {
+                sel.innerHTML = `<option value="">${sel === assistantSurgeonSelect ? 'None' : 'Select...'}</option>`;
+                doctors.forEach(d => sel.add(new Option(d.name, d.id)));
+            });
+        }
+
+        // --- Admin Analytics ---
+        function updateTotalOperationsCount(count) { totalOperationsCount.textContent = count; }
+        function updateTotalDoctorsCount(count) { totalDoctorsCount.textContent = count; }
+        function updateTotalPatientsCount(count) { totalPatientsCount.textContent = count; }
+
+        function generateOTEfficiencyReport(operations) {
+            const otUsage = operations.reduce((acc, op) => {
+                acc[op.otId] = (acc[op.otId] || 0) + 1;
+                return acc;
+            }, {});
+            otEfficiencyList.innerHTML = Object.entries(otUsage).map(([otId, count]) => `<tr><td>${otId}</td><td>${count}</td><td>N/A</td></tr>`).join('');
+        }
+
+        function generateMaterialUsageReport(operations) {
+            const materialCounts = (operations || []).flatMap(op => op.materialsRequired || []).reduce((acc, material) => {
+                const key = material.toLowerCase().trim();
+                if(key) acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+            const sorted = Object.entries(materialCounts).sort((a,b) => b[1] - a[1]);
+            materialList.innerHTML = sorted.length ? sorted.map(([m,c]) => `<li>${m} (Used ${c} times)</li>`).join('') : '<li>No data.</li>';
+        }
+
+        function generateAdminAnalytics() { /* Data updated by listeners */ }
+
+        // --- User Dashboard Views ---
+        let userOperationsUnsubscribe;
+        function listenToDoctorsForUser() {
+            if (doctorsUnsubscribe) doctorsUnsubscribe();
+            const doctorsColRef = collection(db, "doctors");
+            doctorsUnsubscribe = onSnapshot(doctorsColRef, (snapshot) => {
+                const doctors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                displayUserDoctors(doctors);
+            }, (error) => console.error("Error listening to user doctors:", error));
+        }
+
+        function displayUserDoctors(doctors) {
+            userDoctorsList.innerHTML = '';
+            doctors.sort((a,b) => a.name.localeCompare(b.name)).forEach(d => {
+                const row = userDoctorsList.insertRow();
+                row.innerHTML = `<td>${d.name}</td><td>${d.specialization}</td><td>${d.contact}</td>`;
+            });
+        }
+
+        
+        let allUserOperationsData = [];
+        function listenToOperationsForUser() {
+            if (userOperationsUnsubscribe) userOperationsUnsubscribe();
+            const operationsColRef = collection(db, "operations");
+            userOperationsUnsubscribe = onSnapshot(operationsColRef, (snapshot) => {
+                allUserOperationsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                applyUserOperationFilter();
+            }, (error) => console.error("Error listening to user operations:", error));
+        }
+
+        function applyUserOperationFilter() {
+            const filterDate = userOperationDateFilter.value;
+            const filtered = filterDate ? allUserOperationsData.filter(op => op.dateTime && op.dateTime.startsWith(filterDate)) : allUserOperationsData;
+            displayUserOperations(filtered);
+        }
+
+        userOperationDateFilter.addEventListener('change', applyUserOperationFilter);
+        clearUserOperationDateFilterBtn.addEventListener('click', () => {
+            userOperationDateFilter.value = '';
+            applyUserOperationFilter();
+        });
+
+        function displayUserOperations(operations) {
+            userOperationsList.innerHTML = '';
+            operations.sort((a,b) => new Date(b.dateTime) - new Date(a.dateTime)).forEach(op => {
+                const row = userOperationsList.insertRow();
+                row.innerHTML = `<td>${new Date(op.dateTime).toLocaleString()}</td><td>${op.otId}</td><td>${op.patientName}</td><td>${op.surgeonName}</td><td>${op.anesthesiologistName}</td>
+                    <td><button class="btn-secondary view-op-details-btn" data-id="${op.id}">Details</button></td>`;
+            });
+            document.querySelectorAll('.view-op-details-btn').forEach(b => b.onclick = (e) => {
+                const id = e.currentTarget.dataset.id;
+                const op = allUserOperationsData.find(o => o.id === id);
+                if (op) {
+                    const details = Object.entries(op).map(([key, val]) => `<p class="text-left"><strong>${key}:</strong> ${Array.isArray(val) ? val.join(', ') : val}</p>`).join('');
+                    showMessage("Operation Details", details);
+                }
+            });
+        }
+
+        // Initialize Firebase when the window loads
+        window.onload = initializeFirebase;
+
+    </script>
+</body>
+</html>
